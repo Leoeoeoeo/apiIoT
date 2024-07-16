@@ -1,5 +1,4 @@
-def create_tables():
-    db = get_db()
+def create_tables(db):
     db.execute('''
         CREATE TABLE IF NOT EXISTS Admin (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,3 +50,55 @@ def create_tables():
         )
     ''')
     db.commit()
+def insert_admin(db, username, password, api_key):
+    db.execute('''
+        INSERT INTO Admin (username, password, api_key)
+        VALUES (?, ?, ?)
+    ''', (username, password, api_key))
+    db.commit()
+
+def insert_company(db, company_name, company_api_key):
+    db.execute('''
+        INSERT INTO Company (company_name, company_api_key)
+        VALUES (?, ?)
+    ''', (company_name, company_api_key))
+    db.commit()
+
+def insert_location(db, company_id, location_name, location_country, location_city, location_meta):
+    db.execute('''
+        INSERT INTO Location (company_id, location_name, location_country, location_city, location_meta)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (company_id, location_name, location_country, location_city, location_meta))
+    db.commit()
+
+def insert_sensor(db, location_id, sensor_name, sensor_category, sensor_meta, sensor_api_key):
+    db.execute('''
+        INSERT INTO Sensor (location_id, sensor_name, sensor_category, sensor_meta, sensor_api_key)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (location_id, sensor_name, sensor_category, sensor_meta, sensor_api_key))
+    db.commit()
+
+def insert_sensor_data(db, sensor_id, payload):
+    db.execute('''
+        INSERT INTO SensorData (sensor_id, payload)
+        VALUES (?, ?)
+    ''', (sensor_id, payload))
+    db.commit()
+
+def update_table(db, table_name, column_name, new_value, condition):
+    try:
+        query = f'UPDATE {table_name} SET {column_name} = ? WHERE {condition}'
+        db.execute(query, (new_value,))
+        db.commit()
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        raise
+    except Exception as e:
+        print(f"Exception in update_table: {e}")
+        raise
+
+def get_table(db, table_name):
+    cursor = db.execute(f'''
+        SELECT * FROM {table_name}
+    ''')
+    return cursor.fetchall()
