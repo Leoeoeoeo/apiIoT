@@ -38,7 +38,7 @@ def add_sensor_data():
     if not sensor:
         return jsonify({'message': 'Invalid sensor API key'}), 400
     for entry in data['json_data']:
-        conn.execute('INSERT INTO sensor_data (sensor_id, data) VALUES (?, ?)',
+        conn.execute('INSERT INTO SensorData (sensor_id, payload) VALUES (?, ?)',
                      (sensor['id'], str(entry)))
     conn.commit()
     conn.close()

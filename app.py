@@ -5,8 +5,6 @@ from handlers import create_company, create_location, create_sensor, add_sensor_
 from database import get_db_connection
 from config import DB_NAME
 
-
-
 app = Flask(__name__)
 app.config['DATABASE'] = DB_NAME
 
@@ -35,86 +33,71 @@ def insert_admin_route():
     insert_admin(db, data['username'], data['password'], data['api_key'])
     return 'Admin inserted successfully.'
 
-# @app.route('/insert_company', methods=['POST'])
-# def insert_company_route():
-#     db = get_db()
-#     data = request.json
-#     insert_company(db, data['company_name'], data['company_api_key'])
-#     return 'Company inserted successfully.'
-
-# @app.route('/insert_location', methods=['POST'])
-# def insert_location_route():
-#     db = get_db()
-#     data = request.json
-#     insert_location(db, data['company_id'], data['location_name'], data['location_country'], data['location_city'], data['location_meta'])
-#     return 'Location inserted successfully.'
-
-# @app.route('/insert_sensor', methods=['POST'])
-# def insert_sensor_route():
-#     db = get_db()
-#     data = request.json
-#     insert_sensor(db, data['location_id'], data['sensor_name'], data['sensor_category'], data['sensor_meta'], data['sensor_api_key'])
-#     return 'Sensor inserted successfully.'
-
-# @app.route('/insert_sensor_data', methods=['POST'])
-# def insert_sensor_data_route():
-#     db = get_db()
-#     data = request.json
-#     insert_sensor_data(db, data['sensor_id'], data['payload'])
-#     return 'Sensor data inserted successfully.'
-
-# @app.route('/update_table', methods=['POST'])
-# def update_table_route():
-#     db = get_db()
-#     data = request.json
-#     try:
-#         update_table(db, data['table_name'], data['column_name'], data['new_value'], data['condition'])
-#         return 'Table updated successfully.'
-#     except Exception as e:
-#         return f"An error occurred: {e}", 500
-
-# @app.route('/get_table', methods=['GET'])
-# def get_table_route():
-#     db = get_db()
-#     table_name = request.args.get('table_name')
-#     data = get_table(db, table_name)
-#     return jsonify(data)
-
-
-
 def verify_company_api_key(api_key):
-    conn = get_db_connection()
-    company = conn.execute('SELECT id FROM company WHERE company_api_key = ?', (api_key,)).fetchone()
-    conn.close()
-    return company
+    db = get_db()
+    company = db.execute('SELECT id FROM company WHERE company_api_key = ?', (api_key,)).fetchone()
+    return company is not None
 
 def verify_sensor_api_key(api_key):
-    conn = get_db_connection()
-    sensor = conn.execute('SELECT id FROM sensor WHERE sensor_api_key = ?', (api_key,)).fetchone()
-    conn.close()
-    return sensor
-
-@app.route('/')
-def home():
-    return render_template('index.html')
+    db = get_db()
+    sensor = db.execute('SELECT id FROM sensor WHERE sensor_api_key = ?', (api_key,)).fetchone()
+    return sensor is not None
 
 @app.route('/api/v1/companies', methods=['POST'])
 def route_create_company():
     return create_company()
 
+@app.route('/api/v1/companies', methods=['GET'])
+def get_companies():
+    db = get_db()
+    companies = db.execute('SELECT * FROM company').fetchall()
+    return jsonify(companies)
+
 @app.route('/api/v1/locations', methods=['POST'])
 def route_create_location():
-    company_api_key = request.headers.get('company_api_key')
+    data = request.get_json()
+    company_api_key = data['company_api_key']
+    print(company_api_key)
     if not verify_company_api_key(company_api_key):
         return jsonify({'message': 'Invalid company API key'}), 403
     return create_location()
 
+@app.route('/api/v1/locations', methods=['GET'])
+def get_locations():
+    db = get_db()
+    locations = db.execute('SELECT * FROM location').fetchall()
+    return jsonify(locations)
+
+@app.route('/api/v1/locations/<int:id>', methods=['GET'])
+def get_location(id):
+    db = get_db()
+    location = db.execute('SELECT * FROM location WHERE id = ?', (id,)).fetchone()
+    if location:
+        return jsonify(dict(location))
+    return jsonify({'message': 'Location not found'}), 404
+
 @app.route('/api/v1/sensors', methods=['POST'])
 def route_create_sensor():
-    company_api_key = request.headers.get('company_api_key')
+    data = request.get_json()
+    company_api_key = data['company_api_key']
+    print(company_api_key)
     if not verify_company_api_key(company_api_key):
         return jsonify({'message': 'Invalid company API key'}), 403
     return create_sensor()
+
+@app.route('/api/v1/sensors', methods=['GET'])
+def get_sensors():
+    db = get_db()
+    sensors = db.execute('SELECT * FROM sensor').fetchall()
+    return jsonify(sensors)
+
+@app.route('/api/v1/sensors/<int:id>', methods=['GET'])
+def get_sensor(id):
+    db = get_db()
+    sensor = db.execute('SELECT * FROM sensor WHERE id = ?', (id,)).fetchone()
+    if sensor:
+        return jsonify(dict(sensor))
+    return jsonify({'message': 'Sensor not found'}), 404
 
 @app.route('/api/v1/sensor_data', methods=['POST'])
 def route_add_sensor_data():
@@ -123,13 +106,67 @@ def route_add_sensor_data():
         return jsonify({'message': 'Invalid sensor API key'}), 403
     return add_sensor_data()
 
-
 @app.route('/api/v1/sensor_data', methods=['GET'])
 def route_get_sensor_data():
-    company_api_key = request.args.get('company_api_key')
-    if not verify_company_api_key(company_api_key):
-        return jsonify({'message': 'Invalid company API key'}), 403
-    return get_sensor_data()
+    db = get_db()
+    sensor_data = db.execute('SELECT * FROM SensorData').fetchall()
+    return jsonify(sensor_data)
+
+@app.route('/api/v1/sensor_data/<int:id>', methods=['GET'])
+def get_sensor_data_by_id(id):
+    db = get_db()
+    sensor_data = db.execute('SELECT * FROM sensor_data WHERE id = ?', (id,)).fetchone()
+    if sensor_data:
+        return jsonify(dict(sensor_data))
+    return jsonify({'message': 'Sensor data not found'}), 404
+
+@app.route('/api/v1/locations/<int:id>', methods=['PUT'])
+def update_location(id):
+    db = get_db()
+    data = request.json
+    db.execute('UPDATE location SET company_id = ?, location_name = ?, location_country = ?, location_city = ?, location_meta = ? WHERE id = ?', 
+               (data['company_id'], data['location_name'], data['location_country'], data['location_city'], data['location_meta'], id))
+    db.commit()
+    return jsonify({'message': 'Location updated successfully'})
+
+@app.route('/api/v1/sensors/<int:id>', methods=['PUT'])
+def update_sensor(id):
+    db = get_db()
+    data = request.json
+    db.execute('UPDATE sensor SET location_id = ?, sensor_name = ?, sensor_category = ?, sensor_meta = ?, sensor_api_key = ? WHERE id = ?', 
+               (data['location_id'], data['sensor_name'], data['sensor_category'], data['sensor_meta'], data['sensor_api_key'], id))
+    db.commit()
+    return jsonify({'message': 'Sensor updated successfully'})
+
+@app.route('/api/v1/sensor_data/<int:id>', methods=['PUT'])
+def update_sensor_data(id):
+    db = get_db()
+    data = request.json
+    db.execute('UPDATE sensor_data SET sensor_id = ?, payload = ? WHERE id = ?', 
+               (data['sensor_id'], data['payload'], id))
+    db.commit()
+    return jsonify({'message': 'Sensor data updated successfully'})
+
+@app.route('/api/v1/locations/<int:id>', methods=['DELETE'])
+def delete_location(id):
+    db = get_db()
+    db.execute('DELETE FROM location WHERE id = ?', (id,))
+    db.commit()
+    return jsonify({'message': 'Location deleted successfully'})
+
+@app.route('/api/v1/sensors/<int:id>', methods=['DELETE'])
+def delete_sensor(id):
+    db = get_db()
+    db.execute('DELETE FROM sensor WHERE id = ?', (id,))
+    db.commit()
+    return jsonify({'message': 'Sensor deleted successfully'})
+
+@app.route('/api/v1/sensor_data/<int:id>', methods=['DELETE'])
+def delete_sensor_data(id):
+    db = get_db()
+    db.execute('DELETE FROM SensorData WHERE id = ?', (id,))
+    db.commit()
+    return jsonify({'message': 'Sensor data deleted successfully'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
