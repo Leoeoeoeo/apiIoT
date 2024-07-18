@@ -33,6 +33,8 @@ def insert_admin_route():
     insert_admin(db, data['username'], data['password'], data['api_key'])
     return 'Admin inserted successfully.'
 
+#--Autenticación de Api Key--#
+
 def verify_company_api_key(api_key):
     db = get_db()
     company = db.execute('SELECT id FROM company WHERE company_api_key = ?', (api_key,)).fetchone()
@@ -43,16 +45,21 @@ def verify_sensor_api_key(api_key):
     sensor = db.execute('SELECT id FROM sensor WHERE sensor_api_key = ?', (api_key,)).fetchone()
     return sensor is not None
 
+##--Rutas--##
+
+#--Crear compañías--#
 @app.route('/api/v1/companies', methods=['POST'])
 def route_create_company():
     return create_company()
 
+#--Listar compañías--#
 @app.route('/api/v1/companies', methods=['GET'])
 def get_companies():
     db = get_db()
     companies = db.execute('SELECT * FROM company').fetchall()
     return jsonify(companies)
 
+#--Crear ubicación--#
 @app.route('/api/v1/locations', methods=['POST'])
 def route_create_location():
     data = request.get_json()
@@ -62,20 +69,14 @@ def route_create_location():
         return jsonify({'message': 'Invalid company API key'}), 403
     return create_location()
 
+#--Listar ubicaciones--#
 @app.route('/api/v1/locations', methods=['GET'])
 def get_locations():
     db = get_db()
     locations = db.execute('SELECT * FROM location').fetchall()
     return jsonify(locations)
 
-@app.route('/api/v1/locations/<int:id>', methods=['GET'])
-def get_location(id):
-    db = get_db()
-    location = db.execute('SELECT * FROM location WHERE id = ?', (id,)).fetchone()
-    if location:
-        return jsonify(dict(location))
-    return jsonify({'message': 'Location not found'}), 404
-
+#--Crear Sensor--#
 @app.route('/api/v1/sensors', methods=['POST'])
 def route_create_sensor():
     data = request.get_json()
@@ -85,20 +86,14 @@ def route_create_sensor():
         return jsonify({'message': 'Invalid company API key'}), 403
     return create_sensor()
 
+#--Listar Sensores--#
 @app.route('/api/v1/sensors', methods=['GET'])
 def get_sensors():
     db = get_db()
     sensors = db.execute('SELECT * FROM sensor').fetchall()
     return jsonify(sensors)
 
-@app.route('/api/v1/sensors/<int:id>', methods=['GET'])
-def get_sensor(id):
-    db = get_db()
-    sensor = db.execute('SELECT * FROM sensor WHERE id = ?', (id,)).fetchone()
-    if sensor:
-        return jsonify(dict(sensor))
-    return jsonify({'message': 'Sensor not found'}), 404
-
+#--Crear Datos de Sensores--#
 @app.route('/api/v1/sensor_data', methods=['POST'])
 def route_add_sensor_data():
     data = request.get_json()
@@ -106,20 +101,14 @@ def route_add_sensor_data():
         return jsonify({'message': 'Invalid sensor API key'}), 403
     return add_sensor_data()
 
+#--Listar Datos de Sensores--#
 @app.route('/api/v1/sensor_data', methods=['GET'])
 def route_get_sensor_data():
     db = get_db()
     sensor_data = db.execute('SELECT * FROM SensorData').fetchall()
     return jsonify(sensor_data)
 
-@app.route('/api/v1/sensor_data/<int:id>', methods=['GET'])
-def get_sensor_data_by_id(id):
-    db = get_db()
-    sensor_data = db.execute('SELECT * FROM sensor_data WHERE id = ?', (id,)).fetchone()
-    if sensor_data:
-        return jsonify(dict(sensor_data))
-    return jsonify({'message': 'Sensor data not found'}), 404
-
+#--Actualizar Ubicación--#
 @app.route('/api/v1/locations/<int:id>', methods=['PUT'])
 def update_location(id):
     db = get_db()
@@ -129,6 +118,7 @@ def update_location(id):
     db.commit()
     return jsonify({'message': 'Location updated successfully'})
 
+#--Actualizar Sensor--#
 @app.route('/api/v1/sensors/<int:id>', methods=['PUT'])
 def update_sensor(id):
     db = get_db()
@@ -138,6 +128,7 @@ def update_sensor(id):
     db.commit()
     return jsonify({'message': 'Sensor updated successfully'})
 
+#--Actualizar Dato de Sensor--#
 @app.route('/api/v1/sensor_data/<int:id>', methods=['PUT'])
 def update_sensor_data(id):
     db = get_db()
@@ -147,6 +138,7 @@ def update_sensor_data(id):
     db.commit()
     return jsonify({'message': 'Sensor data updated successfully'})
 
+#--Eliminar Ubicación--#
 @app.route('/api/v1/locations/<int:id>', methods=['DELETE'])
 def delete_location(id):
     db = get_db()
@@ -154,6 +146,7 @@ def delete_location(id):
     db.commit()
     return jsonify({'message': 'Location deleted successfully'})
 
+#--Eliminar Sensor--#
 @app.route('/api/v1/sensors/<int:id>', methods=['DELETE'])
 def delete_sensor(id):
     db = get_db()
@@ -161,6 +154,7 @@ def delete_sensor(id):
     db.commit()
     return jsonify({'message': 'Sensor deleted successfully'})
 
+#--Eliminar Dato de Sensor--#
 @app.route('/api/v1/sensor_data/<int:id>', methods=['DELETE'])
 def delete_sensor_data(id):
     db = get_db()
@@ -169,4 +163,4 @@ def delete_sensor_data(id):
     return jsonify({'message': 'Sensor data deleted successfully'})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5555)
